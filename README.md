@@ -1,7 +1,7 @@
 
 ---
 
-# AI Learning Agent (RAG + Memory)
+# 学习型智能 Agent（RAG知识检索 + 笔记记忆） 
 
 一个基于 LangGraph 构建的智能学习助手，支持知识检索与个人笔记记忆的结合。
 
