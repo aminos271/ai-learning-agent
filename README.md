@@ -106,6 +106,11 @@ LLM_API_KEY=your_api_key
 
 ## ▶️ 运行
 
+### 导入文档（构建知识库）
+```bash
+python main.py --ingest ./data/your_file.pdf
+```
+
 ### 交互模式
 
 ```bash
@@ -117,6 +122,7 @@ python main.py -i
 ```bash
 python main.py -q "什么是LLM"
 ```
+
 
 ---
 

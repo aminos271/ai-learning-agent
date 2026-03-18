@@ -2,14 +2,14 @@ import argparse
 import uuid
 from graph.workflow import create_workflow
 from core.runtime import build_runtime
-
+from rag.document_manager import DocumentManager
 
 def run_session(agent, session_id, questions):
     config = {"configurable": {"thread_id": session_id}}
     print(f"🎫 当前会话 ID: {session_id}\n")
     print("=" * 60)
 
-    for i, question in enumerate(questions, 1):
+    for _, question in enumerate(questions, 1):
         question = question.strip()
         if not question:
             continue
@@ -30,15 +30,25 @@ def main():
     parser.add_argument("-q", "--question", action="append", help="一次或多次输入问题")
     parser.add_argument("-i", "--interactive", action="store_true", help="交互式输入问题")
     parser.add_argument("--thread-id", help="指定会话ID，默认随机生成")
-
+    parser.add_argument("--ingest", help="导入文档到知识库（输入文件路径）")
     args = parser.parse_args()
 
     runtime = build_runtime()
+
+    if args.ingest:
+        doc_manager = DocumentManager(runtime["retriever"])
+        result = doc_manager.process_and_store(args.ingest)
+        print(result["message"])
+        if result.get("chunk_count"):
+            print(f"📊 共生成 {result['chunk_count']} 个知识块")
+        return
+    
     agent = create_workflow(runtime)
     session_id = args.thread_id or str(uuid.uuid4())
 
     if args.question:
         run_session(agent, session_id, args.question)
+
     elif args.interactive:
         print("进入交互模式，输入 'exit' 或 'quit' 结束")
         interactive_questions = []
