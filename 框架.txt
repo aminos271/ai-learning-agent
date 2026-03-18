@@ -1,0 +1,30 @@
+ai_learning_agent/
+│
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── .env.example
+├── main.py
+│
+├── core/
+│   ├── config.py
+│   └── runtime.py
+│
+├── rag/
+│   ├── ingest.py
+│   └── retriever.py
+│
+├── memory/
+│   └── memory_store.py
+│
+├── graph/
+│   ├── state.py
+│   ├── workflow.py
+│   ├── prompts.py
+│   └── nodes/
+│       ├── chat.py
+│       ├── note_recall.py
+│       ├── note_store.py
+│       ├── rag.py
+│       ├── rewrite.py
+│       └── router.py
