@@ -30,13 +30,16 @@ def rewrite_node(state: AgentState, llm) -> AgentState:
         print(f"🔄 [重写节点] 发生指代消解: \n   原问题: '{original_question}' \n   新问题: '{rewritten_q}'")
     else:
         print(f"⏩ [重写节点] 意图明确，未做修改。")
+    print(**state)
 
     return {**state,
             "rewritten_question": rewritten_q,
             "metadata": {
                 **state.get("metadata", {}),
-                "original_question": original_question,
-                "rewritten_question": rewritten_q,
-                "rewrite_changed": rewritten_q != original_question
+                "rewrite": {
+                    "original_question": original_question,
+                    "rewritten_question": rewritten_q,
+                    "changed": rewritten_q != original_question
+                }
             }
     }

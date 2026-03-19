@@ -8,9 +8,10 @@ from graph.state import AgentState
 
 class RouteDecision(BaseModel):
     """大模型路由决策的输出格式"""
-    route: Literal["rag", "note_recall", "chat"] = Field(
+    route: Literal["rag", "note_recall", "chat", "note_store"] = Field(
         description="""
         判断用户意图。如果是查阅以前的笔记，回顾学习，返回 'note_recall'。
+        如果用户要求记录新的笔记、保存当前对话中的知识点或学习心得，返回 'note_store'。
         如果是询问客观知识、文档内容，返回 'rag'。
         单纯聊天或追问刚才的话题走 'chat'。
         """

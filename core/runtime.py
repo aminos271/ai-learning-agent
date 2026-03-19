@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 
 from rag.retriever import QdrantRetriever
-from memory.memory_store import MemoryStore
+from memory.memory_store import MemoryWriter, MemoryRetriever
 from core.config import Config
 
 
@@ -19,10 +19,12 @@ def build_runtime():
     retriever = QdrantRetriever()
     
     # 学习笔记
-    memory_store = MemoryStore()
+    memory_writer = MemoryWriter()
+    memory_retriever = MemoryRetriever()
     
     return {
         "llm": llm,
         "retriever": retriever,
-        "memory_store": memory_store
+        "memory_writer": memory_writer,
+        "memory_retriever": memory_retriever,
     }

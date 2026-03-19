@@ -112,3 +112,15 @@ rewrite_prompt = ChatPromptTemplate.from_messages([
 """),
     ("human", "【历史对话】\n{messages}\n\n【用户最新问题】：{question}")
 ])
+
+rag_muti_retriever_prompt =  ChatPromptTemplate.from_messages([
+            (
+                "system",
+                "你是一个专业的AI检索优化专家。"
+                "你的任务是将用户的原始查询改写成 3 个不同角度的等价查询，"
+                "以提高在向量数据库中的检索召回率。\n\n{format_instructions}"
+            ),
+            ("human", "原始查询：{question}")
+        ])
+
+

@@ -8,10 +8,12 @@ ai_learning_agent/
 │
 ├── core/
 │   ├── config.py
-│   └── runtime.py
+│   ├── runtime.py
+│   └── base_retriever.py
 │
 ├── rag/
 │   ├── ingest.py
+│   ├── document_manager.py
 │   └── retriever.py
 │
 ├── memory/

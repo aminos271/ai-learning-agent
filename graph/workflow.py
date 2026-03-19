@@ -1,23 +1,33 @@
 from langgraph.graph import StateGraph, END
 from graph.state import AgentState
 from langgraph.checkpoint.memory import MemorySaver 
-from graph.nodes import router_node, note_store_node, rag_node, note_recall_node, chat_node, rewrite_node
+from graph.nodes import (
+    router_node,
+    note_store_prepare_node,
+    note_store_save_node,
+    rag_node,
+    note_recall_node,
+    chat_node,
+    rewrite_node,
+)
 
 def create_workflow(runtime: dict):
 
     llm = runtime["llm"]
     retriever = runtime["retriever"]
-    memory_store = runtime["memory_store"]
+    memory_writer = runtime["memory_writer"]
+    memory_retriever = runtime["memory_retriever"]
 
     # 1. 初始化图并传入状态定义
     workflow = StateGraph(AgentState)
 
     # 2. 添加节点
     workflow.add_node("rewrite", lambda state: rewrite_node(state, llm))
-    workflow.add_node("note_store", lambda state: note_store_node(state, memory_store))
+    workflow.add_node("note_store_prepare", note_store_prepare_node)
+    workflow.add_node("note_store_save", lambda state: note_store_save_node(state, memory_writer))
     workflow.add_node("router", lambda state: router_node(state, llm))
     workflow.add_node("rag", lambda state: rag_node(state, llm, retriever))
-    workflow.add_node("note_recall", lambda state: note_recall_node(state, llm, memory_store))
+    workflow.add_node("note_recall", lambda state: note_recall_node(state, llm, memory_retriever))
     workflow.add_node("chat", lambda state: chat_node(state, llm))
 
     # 3. 设置入口起点
@@ -33,7 +43,7 @@ def create_workflow(runtime: dict):
             "rag": "rag",
             "note_recall": "note_recall",
             "chat": "chat",
-            "note_store":"note_store",
+            "note_store": "note_store_prepare",
         }
     )
 
@@ -42,7 +52,8 @@ def create_workflow(runtime: dict):
     workflow.add_edge("rag", END)
     workflow.add_edge("note_recall", END)
     workflow.add_edge("chat", END)
-    workflow.add_edge("note_store", END)
+    workflow.add_edge("note_store_prepare", "note_store_save")
+    workflow.add_edge("note_store_save", END)
 
     memory = MemorySaver()
     # 6. 编译图

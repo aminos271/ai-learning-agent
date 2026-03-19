@@ -21,7 +21,6 @@ def chat_node(state: AgentState, llm) -> AgentState:
 
     return {
         **state,
-        "context": "（纯上下文对话，无外部检索）",
         "answer": response.content,
         "messages": [AIMessage(content=response.content)]
     }
