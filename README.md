@@ -24,7 +24,9 @@
 
 - 🔀 Multi-Query 检索：提升召回率
 - 📊 简单 Rerank：基于相似度与结构信息排序
-- 🧩 Metadata-aware 检索：结合文档结构信息
+- 📊 分层 Rerank：RAG 与 Memory 使用不同评分策略
+- 🧠 模块化 Memory 系统：Writer / Retriever / Scoring 解耦
+- ⚠️ Metadata Filter（当前未启用主流程）：底层支持，等待稳定 producer 接入
 - 🧠 独立 Memory Store：用户笔记与知识库分离
 - 🔄 状态驱动工作流：基于 LangGraph 实现可控流程
 
@@ -34,7 +36,13 @@
 ai_learning_agent/
 ├── core/          # 配置与运行时
 ├── rag/           # 文档处理与检索
-├── memory/        # 笔记存储与检索
+├── memory/        # 笔记存储与检索（模块化）
+│   ├── writer.py      # 写入逻辑
+│   ├── retriever.py   # 检索逻辑
+│   ├── scoring.py     # 多维评分
+│   ├── filters.py     # filter 处理（底层能力）
+│   ├── schemas.py     # 数据结构
+│   └── memory_store.py # 兼容层
 ├── graph/         # Agent 工作流
 │   ├── nodes/     # 各功能节点
 │   ├── state.py
@@ -162,12 +170,12 @@ Q: 我刚刚记录了什么
 ```text
 User Input
    ↓
-Rewrite（问题改写）
+Rewrite（问题改写 / 指代消解）
    ↓
-Router（意图判断）
-   ├── RAG（知识检索）
-   ├── Note Recall（笔记召回）
-   ├── Note Store (记录笔记知识点) 
+Router（意图分类）
+   ├── RAG（知识检索 → Multi-Query → Rerank）
+   ├── Note Recall（记忆检索 → 多维评分）
+   ├── Note Store（写入记忆）
    └── Chat（闲聊）
 ```
 
@@ -180,7 +188,8 @@ Router（意图判断）
 * [ ] RAG + Memory 融合（当前是分离的）
 * [ ] 前端界面（Web UI）
 * [ ] 多轮记忆优化（长期记忆 vs 会话记忆）
-* [ ] Metadata-aware 检索增强
+* [ ] Metadata Filter 生产端（query → filter）
+* [ ] RAG / Memory filter 能力闭环
 
 ---
 
@@ -194,6 +203,27 @@ Router（意图判断）
 
   * Qdrant: `http://localhost:6333`
   * Ollama: `http://localhost:11434` 
+
+---
+
+---
+
+## ⚠️ 当前能力边界（重要）
+
+为了保证系统可控性与可解释性，当前版本对部分能力做了明确约束：
+
+- ❌ **RAG Metadata Filter：未启用**
+  - 原因：缺少稳定的 filter 生产端（无法从 query 可靠解析 source/h1/h2 等）
+  - 当前 RAG 统一为无过滤语义检索 + rerank
+
+- ⚠️ **Memory Filter：底层支持，主流程未接通**
+  - MemoryWriter 已写入 metadata（concept / save_mode / source 等）
+  - MemoryRetriever 支持 filter 消费
+  - 但当前未实现 query → filter 的稳定生产逻辑
+
+👉 当前 recall 主要依赖：
+- 语义检索
+- 多维 rerank（semantic / keyword / recency / importance）
 
 ---
 
@@ -216,7 +246,7 @@ Router（意图判断）
 
 代码主要在作者的本地环境中经过了测试。由于项目依赖于 Ollama 和 Qdrant 等外部服务，在不同的部署环境下可能会遇到一些特定的兼容或连接问题。
 
-如果您在运行中遇到困难，请优先检查相关的配置选项以及底层服务的运行状态。 非常欢迎大家提交 Issue 或提出宝贵的建议。
+如果您在运行中遇到困难，请优先检查相关的配置选项以及底层服务的运行状态。
 
 目前仍有许多需要改进的地方，特别是在以下方面：
 
