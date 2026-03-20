@@ -1,4 +1,5 @@
 from langchain_core.messages import AIMessage
+from typing import Dict, Any
 from graph.prompts import rag_prompt
 from graph.state import AgentState
 
@@ -11,31 +12,17 @@ def extract_summary_from_answer(answer: str) -> str:
     return text[:100]
 
 
-def _extract_rag_metadata_filter(state: AgentState) -> dict:
-    metadata = state.get("metadata", {}) or {}
-    raw_filter = (
-        metadata.get("rag_filter")
-        or metadata.get("rag_filters")
-        or metadata.get("metadata_filter")
-        or {}
-    )
-
-    if not isinstance(raw_filter, dict):
-        return {}
-
-    allowed_keys = ("source", "section_path", "h1", "h2")
-    return {
-        key: raw_filter[key]
-        for key in allowed_keys
-        if raw_filter.get(key) is not None
-    }
-
 
 def rag_node(state: AgentState, llm, retriever) -> AgentState:
     question = state["question"]
     messages = state.get("messages", [])
     query = state.get("rewritten_question", question)
-    metadata_filter = _extract_rag_metadata_filter(state)
+
+    """
+    当前版本移除/停用 RAG metadata filter 逻辑，原因是上游无 filter 生产端，
+    且 query 无法稳定解析出 source/h1/h2/section_path，继续保留只会制造伪能力和理解负担
+    """
+    metadata_filter: Dict[str, Any] = {}
 
     print("🔍 正在检索知识库...")
     docs = retriever.multi_query_search(query, llm, metadata_filter=metadata_filter)
@@ -78,7 +65,6 @@ def rag_node(state: AgentState, llm, retriever) -> AgentState:
             "save_content": summary,
             "rag": {
                 "query": query,
-                "metadata_filter": metadata_filter,
                 "doc_count": len(docs) if docs else 0,
                 "sources": sources
             }

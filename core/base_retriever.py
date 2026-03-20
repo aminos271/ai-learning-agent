@@ -29,6 +29,7 @@ class BaseQdrantStore:
         "similarity",
         "distance",
         "rerank_score",
+        "keyword_score",
         "recency_score",
         "importance_score",
         "concept_score",

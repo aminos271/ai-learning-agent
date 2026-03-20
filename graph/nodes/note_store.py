@@ -1,5 +1,8 @@
 from graph.state import AgentState
 
+"""
+当前 note_store 在存在遗留 save_content 时，可能错误覆盖用户本轮显式输入的保存内容。
+"""
 
 summary_triggers = ["总结", "总结一下", "帮我总结"]
 correction_triggers = ["纠错", "更正", "修正"]
