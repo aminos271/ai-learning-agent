@@ -119,6 +119,7 @@ class QdrantRetriever(BaseRetriever):
             for item in items:
                 source = item.metadata.get("source")
                 chunk_id = item.metadata.get("chunk_id")
+                # 生成标识，查看是否重复出现
                 item_key = (
                     f"{source}:{chunk_id}"
                     if source is not None or chunk_id is not None
@@ -126,14 +127,18 @@ class QdrantRetriever(BaseRetriever):
                 )
                 existing = unique_items.get(item_key)
 
+                # matched_queries相当于贴标签，标记文档是从哪些query查询获得的
                 matched_queries = set(item.retrieval_meta.get("matched_queries", []))
                 matched_queries.add(q)
 
+                # 如果没重复，处理新chunk
                 if existing is None:
+                    # sorted返回的是list
                     item.retrieval_meta["matched_queries"] = sorted(matched_queries)
                     unique_items[item_key] = item
                     continue
-
+                
+                # 如果重复，通过similarity进行比较，保留相似度大的，同时记录所有查询这个chunk的query
                 existing_queries = set(existing.retrieval_meta.get("matched_queries", []))
                 combined_queries = sorted(existing_queries | matched_queries)
 

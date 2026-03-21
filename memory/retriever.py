@@ -3,19 +3,13 @@ from typing import Any, Dict, List, Optional
 from core.base_retriever import BaseRetriever
 from core.config import Config
 
-from .filters import build_rerank_metadata_filter, normalize_search_filter, split_search_filters
+from .filters import normalize_search_filter, split_search_filters
 from .scoring import (
     GENERIC_CONCEPTS,
     KEYWORD_STOPWORDS,
-    compute_keyword_score,
     compute_memory_score,
-    compute_recency_score,
     debug_rerank_result,
-    extract_keywords,
-    is_high_confidence_concept,
     maybe_expand_query_with_concept,
-    normalize_text,
-    parse_timestamp,
     resolve_candidate_k,
 )
 from .schemas import RetrievedItem
@@ -49,48 +43,7 @@ class MemoryRetriever(BaseRetriever):
             metadata_filter=metadata_filter,
         )
 
-    def _split_search_filters(
-        self,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
-        return split_search_filters(metadata_filter)
-
-    def _normalize_text(self, text: Optional[str]) -> str:
-        return normalize_text(text)
-
-    def _extract_keywords(self, text: Optional[str]) -> List[str]:
-        return extract_keywords(text)
-
-    def _compute_keyword_score(self, query: str, content: str) -> float:
-        return compute_keyword_score(query, content)
-
-    def _is_high_confidence_concept(self, concept: Optional[str]) -> bool:
-        return is_high_confidence_concept(concept)
-
-    def _maybe_expand_query_with_concept(
-        self,
-        query: str,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> tuple[str, Optional[str]]:
-        return maybe_expand_query_with_concept(query, metadata_filter)
-
-    def _resolve_candidate_k(self, top_k: int) -> int:
-        return resolve_candidate_k(top_k)
-
-    def _parse_timestamp(self, timestamp: Optional[str]):
-        return parse_timestamp(timestamp)
-
-    def _compute_recency_score(self, timestamp: Optional[str]) -> float:
-        return compute_recency_score(timestamp)
-
-    def _build_rerank_metadata_filter(
-        self, metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        return build_rerank_metadata_filter(metadata_filter)
-
-    def _debug_rerank_result(self, ranked: List[Dict[str, Any]], top_k: int):
-        return debug_rerank_result(ranked, top_k)
-
+    
     def _rerank_documents(
         self,
         question: str,
@@ -137,7 +90,7 @@ class MemoryRetriever(BaseRetriever):
             )
 
         ranked.sort(key=lambda item: item["final_score"], reverse=True)
-        self._debug_rerank_result(ranked, top_k)
+        debug_rerank_result(ranked, top_k)
         return [item["item"] for item in ranked[:top_k]]
 
     def retrieve(
@@ -146,16 +99,17 @@ class MemoryRetriever(BaseRetriever):
         k: int = 5,
         metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[RetrievedItem]:
-        """兼容 BaseRetriever 接口，但不再把 concept 作为硬过滤条件。"""
+        """记忆检索主流程：拆过滤条件 -> 扩展query -> 放大召回 -> rerank"""
+    
 
 
-
-        vector_filter, rerank_filter = self._split_search_filters(metadata_filter)
-        effective_query, concept_hint = self._maybe_expand_query_with_concept(
+        vector_filter, rerank_filter = split_search_filters(metadata_filter)
+        effective_query, concept_hint = maybe_expand_query_with_concept(
             question,
             rerank_filter,
         )
-        candidate_k = self._resolve_candidate_k(k)
+       
+        candidate_k = resolve_candidate_k(k)
 
         items = self._similarity_search_items(
             effective_query,
@@ -188,52 +142,28 @@ class MemoryRetriever(BaseRetriever):
     ) -> List[RetrievedItem]:
         """按 Memory 策略检索历史笔记。"""
         try:
-            search_filter = self._normalize_search_filter(
-                concept=concept,
-                note_type=note_type,
-                save_mode=save_mode,
-                source=source,
-                metadata_filter=metadata_filter,
-            )
-            vector_filter, _ = self._split_search_filters(search_filter)
-            effective_query, concept_hint = self._maybe_expand_query_with_concept(query, search_filter)
-            print(
-                f"🧠 正在翻阅历史记忆: '{query}' "
-                f"vector_filters={vector_filter} "
-                f"concept_hint={concept_hint or '-'} "
-                f"effective_query='{effective_query}'"
-            )
-            return self.retrieve(query, k=k, metadata_filter=search_filter)
+            # search_filter = self._normalize_search_filter(
+            #     concept=concept,
+            #     note_type=note_type,
+            #     save_mode=save_mode,
+            #     source=source,
+            #     metadata_filter=metadata_filter,
+            # )
+            # vector_filter, _ = split_search_filters(search_filter)
+            # effective_query, concept_hint = maybe_expand_query_with_concept(query, search_filter)
+            # print(
+            #     f"🧠 正在翻阅历史记忆: '{query}' "
+            #     f"vector_filters={vector_filter} "
+            #     f"concept_hint={concept_hint or '-'} "
+            #     f"effective_query='{effective_query}'"
+            # )
+            # 现在还没真正实现filter功能，只保留接口
+            metadata_filter = {}
+            return self.retrieve(query, k=k, metadata_filter=metadata_filter)
         except Exception as e:
             print(f"❌ MemoryRetriever.search_notes 失败：{e}")
             return []
 
-    def search(
-        self,
-        query: str,
-        k: int = 3,
-        concept: Optional[str] = None,
-        note_type: Optional[str] = None,
-        save_mode: Optional[str] = None,
-        source: Optional[str] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ):
-        """兼容旧接口，返回纯文本结果列表。"""
-        try:
-            items = self.search_notes(
-                query,
-                k=k,
-                concept=concept,
-                note_type=note_type,
-                save_mode=save_mode,
-                source=source,
-                metadata_filter=metadata_filter,
-            )
-            results = [item.content for item in items]
-            return results if results else []
-        except Exception as e:
-            print(f"❌ MemoryRetriever.search 失败：{e}")
-            return []
 
 
 __all__ = ["MemoryRetriever"]

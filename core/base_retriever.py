@@ -117,6 +117,7 @@ class BaseQdrantStore:
     def _split_static_and_dynamic_metadata(
         self, metadata: Optional[Dict[str, Any]]
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        # 分离static_metadata 与 retrieval_meta
         static_metadata = dict(metadata or {})
         retrieval_meta: Dict[str, Any] = {}
 
@@ -135,6 +136,7 @@ class BaseQdrantStore:
         doc: Document,
         retrieval_meta: Optional[Dict[str, Any]] = None,
     ) -> RetrievedItem:
+        # 组装metadata
         static_metadata, dynamic_from_doc = self._split_static_and_dynamic_metadata(
             doc.metadata
         )
@@ -154,6 +156,7 @@ class BaseQdrantStore:
         k: int = 5,
         metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[RetrievedItem]:
+        # 返回检索的文档与相似度，失败时仅返回文档
         vector_store = self._get_vector_store()
         qdrant_filter = self._make_qdrant_filter(metadata_filter)
 
