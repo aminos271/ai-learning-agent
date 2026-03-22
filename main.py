@@ -3,6 +3,7 @@ import uuid
 from graph.workflow import create_workflow
 from core.runtime import build_runtime
 from rag.document_manager import DocumentManager
+from langchain_core.messages import HumanMessage
 
 def run_session(agent, session_id, questions):
     config = {"configurable": {"thread_id": session_id}}
@@ -16,7 +17,13 @@ def run_session(agent, session_id, questions):
 
         print("-" * 60)
 
-        result = agent.invoke({"question": question}, config=config)
+        result = agent.invoke(
+                {
+                    "question": question,
+                    "messages": [HumanMessage(content=question)],
+                }, 
+                config=config
+                )
         route = result.get("route", "未知")
         answer = result.get("answer", "无回答")
 

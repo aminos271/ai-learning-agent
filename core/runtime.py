@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 
 from rag.retriever import QdrantRetriever
-from memory.memory_store import MemoryWriter, MemoryRetriever
+from memory import MemoryWriter, MemoryRetriever
 from core.config import Config
 
 
