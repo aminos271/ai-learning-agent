@@ -1,13 +1,21 @@
 from graph.state import AgentState
 
-"""
-当前 note_store 在存在遗留 save_content 时，可能错误覆盖用户本轮显式输入的保存内容。
-"""
+
 
 summary_triggers = ["总结", "总结一下", "帮我总结"]
 correction_triggers = ["纠错", "更正", "修正"]
 reminder_triggers = ["记住", "牢记", "提醒我记住", "记录"]
 
+reference_words = ["这个", "那个", "上面那个", "刚才那个", "上一条", "上面那段", "这段", "这条"]
+save_triggers = ["记住", "牢记", "提醒我记住", "记录", "记一下", "保存", "存一下"]
+
+def has_save_intent(text: str) -> bool:
+    text = (text or "").strip()
+    return any(t in text for t in save_triggers)
+
+def is_reference_save(text: str) -> bool:
+    text = (text or "").strip()
+    return has_save_intent(text) and any(w in text for w in reference_words)
 
 def detect_save_mode(text: str) -> str:
     """
@@ -25,21 +33,36 @@ def detect_save_mode(text: str) -> str:
     return "raw_note"
 
 
+def extract_explicit_content(text: str) -> str:
+    text = (text or "").strip()
+    prefixes = ["帮我记一下", "记一下", "记住", "记录一下", "记录", "保存一下", "保存", "存一下"]
+    content = text
+    for p in prefixes:
+        if content.startswith(p):
+            content = content[len(p):].strip("：:，, ")
+            break
+    return content.strip()
+
 def resolve_content_to_save(state: AgentState) -> tuple[str, str]:
-    """
-    决定要保存什么内容，并显式返回内容来源
-    返回: (content, content_source)
-    """
     metadata = state.get("metadata", {}) or {}
     original_text = (state.get("question") or "").strip()
 
-    if metadata.get("save_content"):
-        return str(metadata["save_content"]).strip(), "save_content"
+    # 1) 本轮显式内容优先
+    explicit_content = extract_explicit_content(original_text)
+    if explicit_content and explicit_content != original_text and not is_reference_save(original_text):
+        return explicit_content, "question"
 
-    if metadata.get("last_answer_summary"):
-        return str(metadata["last_answer_summary"]).strip(), "last_answer_summary"
+    # 2) 只有“指代型保存”才允许读历史缓存
+    if is_reference_save(original_text):
+        pending = (metadata.get("pending_save_content") or "").strip()
+        if pending:
+            return pending, "pending_save_content"
 
-    return original_text, "question"
+    # 3) 最后兜底：如果原句本身就能存，才存原句
+    if original_text and has_save_intent(original_text) and not is_reference_save(original_text):
+        return explicit_content or original_text, "question"
+
+    return "", "empty"
 
 
 def build_note_store_meta(state: AgentState) -> dict:
@@ -149,13 +172,16 @@ def note_store_save_node(state: AgentState, memory_store) -> AgentState:
             "error": None,
         }
 
+        cleaned_metadata = {
+            **metadata,
+            "note_store": updated_note_store_meta,
+            "pending_save_content": "",
+        }
+
         return {
             **state,
             "answer": f"已帮你记录：{content_to_save[:80]}",
-            "metadata": {
-                **metadata,
-                "note_store": updated_note_store_meta,
-            },
+            "metadata": cleaned_metadata,
         }
 
     except Exception as e:

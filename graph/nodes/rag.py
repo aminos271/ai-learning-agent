@@ -52,6 +52,7 @@ def rag_node(state: AgentState, llm, retriever) -> AgentState:
     summary = extract_summary_from_answer(answer)
 
     print("✅ RAG回答生成完成")
+    metadata = state.get("metadata", {}) or {}
 
     return {
         **state,
@@ -60,9 +61,9 @@ def rag_node(state: AgentState, llm, retriever) -> AgentState:
             AIMessage(content=answer)
         ],
         "metadata": {
-            **state.get("metadata", {}),
+            **metadata,
             "last_answer_summary": summary,
-            "save_content": summary,
+            "pending_save_content": summary,
             "rag": {
                 "query": query,
                 "doc_count": len(docs) if docs else 0,
