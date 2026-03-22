@@ -186,7 +186,6 @@ class BaseQdrantStore:
 class BaseRetriever(BaseQdrantStore, ABC):
     """公共检索能力底座，具体 rerank 策略交给子类实现。"""
 
-    @abstractmethod
     def _rerank_documents(
         self,
         question: str,

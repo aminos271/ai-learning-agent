@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from core.config import Config
 from core.base_retriever import BaseRetriever, RetrievedItem
 from graph.prompts import rag_muti_retriever_prompt
-
+from rag.rerank import rerank_documents
     
 class MultiQueries(BaseModel):
     """用于强制大模型输出问题列表"""
@@ -35,58 +35,6 @@ class QdrantRetriever(BaseRetriever):
             for key, value in metadata_filter.items()
             if key in self.supported_metadata_filter_keys and value is not None
         }
-
-    def _rerank_documents(
-        self,
-        question: str,
-        items: List[RetrievedItem],
-        metadata_filter: Optional[Dict[str, Any]] = None,
-        top_k: int = 5,
-    ) -> List[RetrievedItem]:
-        """RAG 检索策略：semantic 为主，metadata match 为辅。"""
-        if not items:
-            return []
-
-        question_vector = self.embeddings.embed_query(question)
-        active_filter = self._normalize_metadata_filter(metadata_filter)
-
-        ranked = []
-        for item in items:
-            semantic_score = float(item.retrieval_meta.get("similarity", 0.0) or 0.0)
-            if semantic_score <= 0 and item.retrieval_meta.get("distance") is not None:
-                semantic_score = 1.0 - float(item.retrieval_meta["distance"])
-
-            if semantic_score <= 0:
-                doc_vector = self.embeddings.embed_documents([item.content])[0]
-                semantic_score = self._cosine_similarity(question_vector, doc_vector)
-
-            metadata_score = 1.0
-            if active_filter:
-                matches = 0
-                for mk, mv in active_filter.items():
-                    if mk in item.metadata and str(item.metadata.get(mk)) == str(mv):
-                        matches += 1
-                metadata_score = matches / max(len(active_filter), 1)
-
-            final_score = semantic_score * 0.8 + metadata_score * 0.2
-            ranked.append(
-                (
-                    final_score,
-                    RetrievedItem(
-                        content=item.content,
-                        metadata=dict(item.metadata),
-                        retrieval_meta={
-                            **item.retrieval_meta,
-                            "similarity": semantic_score,
-                            "metadata_match_score": metadata_score,
-                            "rerank_score": final_score,
-                        },
-                    ),
-                )
-            )
-
-        ranked.sort(key=lambda item: item[0], reverse=True)
-        return [item[1] for item in ranked[:top_k]]
 
     def multi_query_search(
         self,
@@ -158,7 +106,7 @@ class QdrantRetriever(BaseRetriever):
         items_list = list(unique_items.values())
         print(f"✅ 裂变检索完成，共合并去重得到 {len(items_list)} 个独立文档块。")
 
-        reranked_docs = self._rerank_documents(
+        reranked_docs = rerank_documents(
             question,
             items_list,
             active_filter,

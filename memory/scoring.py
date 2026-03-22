@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Tuple
 
 from core.base_retriever import BaseQdrantStore
 
-from .filters import build_rerank_metadata_filter
 from .schemas import MemoryScoreBreakdown, RetrievedItem
 
 
@@ -22,7 +21,6 @@ GENERIC_CONCEPTS = {
     "知识",
     "内容",
 }
-
 
 KEYWORD_STOPWORDS = {
     "a",
@@ -76,22 +74,18 @@ KEYWORD_STOPWORDS = {
 }
 
 
-def normalize_text(text: Optional[str]) -> str:
-    return re.sub(r"\s+", " ", (text or "").strip().lower())
-
-
 def extract_keywords(text: Optional[str]) -> List[str]:
-    normalized = normalize_text(text)
-    if not normalized:
+    text = re.sub(r"\s+", " ", (text or "").strip().lower())
+    if not text:
         return []
 
     keywords: List[str] = []
 
-    for token in re.findall(r"[a-z0-9][a-z0-9_+-]{1,}", normalized):
+    for token in re.findall(r"[a-z0-9][a-z0-9_+-]{1,}", text):
         if token not in KEYWORD_STOPWORDS:
             keywords.append(token)
 
-    for block in re.findall(r"[\u4e00-\u9fff]+", normalized):
+    for block in re.findall(r"[\u4e00-\u9fff]+", text):
         if len(block) < 2:
             continue
 
@@ -99,77 +93,41 @@ def extract_keywords(text: Optional[str]) -> List[str]:
             keywords.append(block)
 
         for size in (2, 3):
-            if len(block) < size:
-                continue
-            for start in range(len(block) - size + 1):
-                token = block[start : start + size]
-                if token not in KEYWORD_STOPWORDS:
-                    keywords.append(token)
+            if len(block) >= size:
+                for i in range(len(block) - size + 1):
+                    token = block[i : i + size]
+                    if token not in KEYWORD_STOPWORDS:
+                        keywords.append(token)
 
     return list(dict.fromkeys(keywords))
 
 
-def compute_keyword_score(query: str, content: str) -> float:
-    keywords = extract_keywords(query)
-    if not keywords:
-        return 0.0
-
-    normalized_content = normalize_text(content)
-    if not normalized_content:
-        return 0.0
-
-    matched_keywords = 0
-    total_hits = 0
-    for keyword in keywords:
-        hit_count = normalized_content.count(keyword)
-        if hit_count <= 0:
-            continue
-        matched_keywords += 1
-        total_hits += min(hit_count, 3)
-
-    if matched_keywords <= 0:
-        return 0.0
-
-    coverage = matched_keywords / len(keywords)
-    density = min(total_hits / len(keywords), 1.0)
-    return max(0.0, min(coverage * 0.7 + density * 0.3, 1.0))
-
-
-def is_high_confidence_concept(concept: Optional[str]) -> bool:
-    candidate = (concept or "").strip()
-    if not candidate:
-        return False
-
-    normalized = candidate.lower()
-    if normalized in GENERIC_CONCEPTS:
-        return False
-
-    if len(candidate) < 2 or len(candidate) > 32:
-        return False
-
-    keyword_count = len(extract_keywords(candidate))
-    return keyword_count > 0
-
-
-def maybe_expand_query_with_concept(
+def expand_query_with_concept(
     query: str,
     metadata_filter: Optional[Dict[str, object]] = None,
 ) -> Tuple[str, Optional[str]]:
-    rerank_filter = build_rerank_metadata_filter(metadata_filter)
-    concept = str(rerank_filter.get("concept") or "").strip()
-    if not is_high_confidence_concept(concept):
+    concept = str((metadata_filter or {}).get("concept") or "").strip()
+    if not concept:
         return query, None
 
-    normalized_query = normalize_text(query)
-    normalized_concept = normalize_text(concept)
-    if not normalized_concept or normalized_concept in normalized_query:
+    concept_lower = concept.lower()
+    if concept_lower in GENERIC_CONCEPTS:
+        return query, None
+
+    if len(concept) < 2 or len(concept) > 32:
+        return query, None
+
+    query_lower = query.strip().lower()
+    concept_lower = concept.strip().lower()
+    if concept_lower in query_lower:
         return query, None
 
     query_keywords = set(extract_keywords(query))
     concept_keywords = set(extract_keywords(concept))
     overlap = query_keywords & concept_keywords
+
     is_short_query = len(query.strip()) <= 18
-    has_recall_marker = any(marker in query for marker in ("这个", "那个", "它", "相关", "之前", "上次"))
+    has_recall_marker = any(x in query for x in ("这个", "那个", "它", "相关", "之前", "上次"))
 
     if overlap or is_short_query or has_recall_marker:
         return f"{query} {concept}".strip(), concept
@@ -179,32 +137,6 @@ def maybe_expand_query_with_concept(
 
 def resolve_candidate_k(top_k: int) -> int:
     return max(top_k * 4, 12)
-
-
-def parse_timestamp(timestamp: Optional[str]) -> Optional[datetime]:
-    if not timestamp:
-        return None
-
-    try:
-        if timestamp.endswith("Z"):
-            timestamp = timestamp.replace("Z", "+00:00")
-        return datetime.fromisoformat(timestamp)
-    except ValueError:
-        return None
-
-
-def compute_recency_score(timestamp: Optional[str]) -> float:
-    parsed = parse_timestamp(timestamp)
-    if parsed is None:
-        return 0.0
-
-    now = datetime.now(timezone.utc)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-
-    age_seconds = max((now - parsed).total_seconds(), 0.0)
-    one_day = 24 * 60 * 60
-    return 1.0 / (1.0 + age_seconds / one_day)
 
 
 def compute_memory_score(
@@ -222,10 +154,45 @@ def compute_memory_score(
         semantic_score = store._cosine_similarity(question_vector, doc_vector)
     semantic_score = max(0.0, min(semantic_score, 1.0))
 
-    keyword_score = compute_keyword_score(question, item.content)
+    keywords = extract_keywords(question)
+    content = re.sub(r"\s+", " ", (item.content or "").strip().lower())
+
+    if not keywords or not content:
+        keyword_score = 0.0
+    else:
+        matched_keywords = 0
+        total_hits = 0
+        for keyword in keywords:
+            hit_count = content.count(keyword)
+            if hit_count > 0:
+                matched_keywords += 1
+                total_hits += min(hit_count, 3)
+
+        if matched_keywords == 0:
+            keyword_score = 0.0
+        else:
+            coverage = matched_keywords / len(keywords)
+            density = min(total_hits / len(keywords), 1.0)
+            keyword_score = max(0.0, min(coverage * 0.7 + density * 0.3, 1.0))
+
     importance = float(item.metadata.get("importance", 0.0) or 0.0)
     importance_score = max(0.0, min(importance, 1.0))
-    recency_score = compute_recency_score(item.metadata.get("timestamp"))
+
+    timestamp = item.metadata.get("timestamp")
+    recency_score = 0.0
+    if timestamp:
+        try:
+            if timestamp.endswith("Z"):
+                timestamp = timestamp.replace("Z", "+00:00")
+            parsed = datetime.fromisoformat(timestamp)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+            age_seconds = max((now - parsed).total_seconds(), 0.0)
+            recency_score = 1.0 / (1.0 + age_seconds / (24 * 60 * 60))
+        except ValueError:
+            recency_score = 0.0
 
     final_score = (
         semantic_score * 0.45
@@ -233,8 +200,6 @@ def compute_memory_score(
         + importance_score * 0.2
         + recency_score * 0.1
     )
-
-    print("SCORE:", semantic_score, keyword_score, importance_score, recency_score)
 
     return MemoryScoreBreakdown(
         semantic_score=semantic_score,
@@ -260,19 +225,3 @@ def debug_rerank_result(ranked: List[Dict[str, object]], top_k: int):
             f"recency={item['recency_score']:.4f} | "
             f"final={item['final_score']:.4f}"
         )
-
-
-__all__ = [
-    "GENERIC_CONCEPTS",
-    "KEYWORD_STOPWORDS",
-    "compute_keyword_score",
-    "compute_memory_score",
-    "compute_recency_score",
-    "debug_rerank_result",
-    "extract_keywords",
-    "is_high_confidence_concept",
-    "maybe_expand_query_with_concept",
-    "normalize_text",
-    "parse_timestamp",
-    "resolve_candidate_k",
-]

@@ -71,7 +71,7 @@ def note_recall_node(state: AgentState, llm, memory_store) -> AgentState:
     recall_filters = _extract_recall_filters(state)
 
     print("🔍 正在检索记忆库...")
-    memories = memory_store.search_notes(
+    memories = memory_store.retrieve(
         query,
         metadata_filter=recall_filters,
     )
