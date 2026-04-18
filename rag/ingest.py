@@ -2,7 +2,6 @@ from markitdown import MarkItDown
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from core.config import Config
-from typing import List, Optional, Tuple
 from langchain_core.documents import Document
 
 import re
@@ -18,7 +17,7 @@ class MarkdownIngestor:
     def __init__(self, 
                  chunk_size: int = Config.CHUNK_SIZE, 
                  chunk_overlap: int = Config.CHUNK_OVERLAP,
-                 headers_to_split_on: Optional[List[Tuple[str, str]]] = None):
+                 headers_to_split_on: list[tuple[str, str]] | None = None):
         """
         在初始化时加载转换器和切分器，避免每次处理文件时重复实例化
         """
@@ -115,7 +114,7 @@ class MarkdownIngestor:
 
         return text.strip()
 
-    def split_md_by_headers(self, text: str, source: str, max_direct_keep: int = 1000) -> List[Document]:
+    def split_md_by_headers(self, text: str, source: str, max_direct_keep: int = 1000) -> list[Document]:
         """步骤三：按标题层级与字符长度进行双重切分"""
 
         header_docs = self.header_splitter.split_text(text)
@@ -149,7 +148,7 @@ class MarkdownIngestor:
 
         return final_docs
 
-    def process_file(self, file_path: str, max_direct_keep: int = 1000) -> List[Document]:
+    def process_file(self, file_path: str, max_direct_keep: int = 1000) -> list[Document]:
         """
         转换 -> 清洗 -> 切分
         """

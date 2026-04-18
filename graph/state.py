@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Annotated, Dict, Any
+from typing import TypedDict, Optional, Annotated, Any
 from langgraph.graph.message import add_messages
 
 
@@ -12,5 +12,5 @@ class AgentState(TypedDict):
     context: Optional[str] # 检索到的背景知识
     answer: Optional[str]  # 最终生成的回答
     route: Optional[str]   # 路由决策（走向 rag 还是 recall）
-    metadata: Optional[Dict[str, Any]]  # 添加 metadata 字段，用于存放额外的元数据
+    metadata: Optional[dict[str, Any]]  # 添加 metadata 字段，用于存放额外的元数据
 

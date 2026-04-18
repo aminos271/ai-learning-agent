@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.base_retriever import BaseRetriever
 from core.config import Config
@@ -31,10 +31,10 @@ class MemoryRetriever(BaseRetriever):
     def _rerank_documents(
         self,
         question: str,
-        items: List[RetrievedItem],
-        metadata_filter: Optional[Dict[str, Any]] = None,
+        items: list[RetrievedItem],
+        metadata_filter: dict[str, Any] | None = None,
         top_k: int = 5,
-    ) -> List[RetrievedItem]:
+    ) -> list[RetrievedItem]:
         """Memory 检索策略：semantic + keyword + importance + recency。"""
         if not items:
             return []
@@ -81,8 +81,8 @@ class MemoryRetriever(BaseRetriever):
         self,
         question: str,
         k: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievedItem]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedItem]:
         """记忆检索主流程：拆过滤条件 -> 扩展query -> 放大召回 -> rerank"""
     
 

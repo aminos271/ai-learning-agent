@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import JsonOutputParser
-from typing import Literal, Optional
+from typing import Literal
 from pydantic import BaseModel, Field
 from graph.prompts import router_prompt
 from graph.state import AgentState
@@ -16,7 +16,7 @@ class RouteDecision(BaseModel):
         单纯聊天或追问刚才的话题走 'chat'。
         """
     )
-    reason: Optional[str] = Field(
+    reason: str | None = Field(
         default=None,
         description="决策原因"
     )

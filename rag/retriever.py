@@ -1,6 +1,6 @@
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.documents import Document
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from pydantic import BaseModel, Field
 from core.config import Config
 from core.base_retriever import BaseRetriever, RetrievedItem
@@ -9,7 +9,7 @@ from rag.rerank import rerank_documents
     
 class MultiQueries(BaseModel):
     """用于强制大模型输出问题列表"""
-    queries: List[str] = Field(description="包含 3 个不同表述的改写问题列表")
+    queries: list[str] = Field(description="包含 3 个不同表述的改写问题列表")
     
 class QdrantRetriever(BaseRetriever):
     """基于 Qdrant 的向量检索器"""
@@ -25,8 +25,8 @@ class QdrantRetriever(BaseRetriever):
 
     def _normalize_metadata_filter(
         self,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if not metadata_filter:
             return {}
 
@@ -41,8 +41,8 @@ class QdrantRetriever(BaseRetriever):
         question: str,
         llm,
         k: int = 3,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievedItem]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedItem]:
         """多问法检索 + 去重 + metadata aware rerank。"""
         parser = JsonOutputParser(pydantic_object=MultiQueries)
         active_filter = self._normalize_metadata_filter(metadata_filter)
@@ -59,7 +59,7 @@ class QdrantRetriever(BaseRetriever):
 
         print(f"改写后的问题：\n{generated_queries}")
 
-        unique_items: Dict[str, RetrievedItem] = {}
+        unique_items: dict[str, RetrievedItem] = {}
         all_queries = [question] + generated_queries
 
         for q in all_queries:
@@ -115,7 +115,7 @@ class QdrantRetriever(BaseRetriever):
 
         return reranked_docs
     
-    def add_documents(self, docs: List[Document]):
+    def add_documents(self, docs: list[Document]):
         """将文本列表批量向量化并存入 Qdrant"""
         vector_store = self._get_vector_store()
         vector_store.add_documents(docs)

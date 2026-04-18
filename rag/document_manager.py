@@ -1,6 +1,6 @@
 import os
 import traceback
-from typing import Dict, Any
+from typing import Any
 from rag.ingest import MarkdownIngestor
 from rag.retriever import QdrantRetriever
 
@@ -16,7 +16,7 @@ class DocumentManager:
         self.ingestor = MarkdownIngestor()
 
 
-    def process_and_store(self, file_path: str) -> Dict[str, Any]:
+    def process_and_store(self, file_path: str) -> dict[str, Any]:
         """
         一键处理上传的文档：解析 -> 切分 -> 向量化入库 
         """

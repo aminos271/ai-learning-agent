@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
 
 from core.base_retriever import BaseQdrantStore
 
@@ -74,12 +73,12 @@ KEYWORD_STOPWORDS = {
 }
 
 
-def extract_keywords(text: Optional[str]) -> List[str]:
+def extract_keywords(text: str | None) -> list[str]:
     text = re.sub(r"\s+", " ", (text or "").strip().lower())
     if not text:
         return []
 
-    keywords: List[str] = []
+    keywords: list[str] = []
 
     for token in re.findall(r"[a-z0-9][a-z0-9_+-]{1,}", text):
         if token not in KEYWORD_STOPWORDS:
@@ -104,8 +103,13 @@ def extract_keywords(text: Optional[str]) -> List[str]:
 
 def expand_query_with_concept(
     query: str,
-    metadata_filter: Optional[Dict[str, object]] = None,
-) -> Tuple[str, Optional[str]]:
+    metadata_filter: dict[str, object] | None = None,
+) -> tuple[str, str] | None:
+    """
+    判断是否对问题进行概念补充，
+    如果问题里有，concept太长了像个句子
+    那就不进行补充
+    """
     concept = str((metadata_filter or {}).get("concept") or "").strip()
     if not concept:
         return query, None
@@ -142,13 +146,12 @@ def resolve_candidate_k(top_k: int) -> int:
 def compute_memory_score(
     store: BaseQdrantStore,
     question: str,
-    question_vector: List[float],
+    question_vector: list[float],
     item: RetrievedItem,
 ) -> MemoryScoreBreakdown:
+    """计算最终的分数，由sematic_score，关键词命中，重要性和时效性构成"""
     semantic_score = float(item.retrieval_meta.get("similarity", 0.0) or 0.0)
-    if semantic_score <= 0 and item.retrieval_meta.get("distance") is not None:
-        semantic_score = 1.0 - float(item.retrieval_meta["distance"])
-
+    
     if semantic_score <= 0:
         doc_vector = store.embeddings.embed_documents([item.content])[0]
         semantic_score = store._cosine_similarity(question_vector, doc_vector)
@@ -210,7 +213,7 @@ def compute_memory_score(
     )
 
 
-def debug_rerank_result(ranked: List[Dict[str, object]], top_k: int):
+def debug_rerank_result(ranked: list[dict[str, object]], top_k: int):
     if not ranked:
         print("📊 Memory rerank: 没有候选结果。")
         return

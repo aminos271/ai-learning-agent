@@ -1,0 +1,20 @@
+{"id":"router-01","history":[],"question":"什么是 RAG？","expected_route":"rag","reason":"典型外部知识问答"}
+{"id":"router-02","history":[],"question":"LangGraph 里的状态图工作流一般怎么设计？","expected_route":"rag","reason":"询问外部概念和流程说明"}
+{"id":"router-03","history":[],"question":"Qdrant 的 metadata filter 一般怎么用？","expected_route":"rag","reason":"外部技术知识检索"}
+{"id":"router-04","history":[],"question":"Multi-Query 检索为什么可能提高召回率？","expected_route":"rag","reason":"概念解释"}
+{"id":"router-05","history":[],"question":"RecursiveCharacterTextSplitter 的 chunk_overlap 有什么作用？","expected_route":"rag","reason":"技术原理解释"}
+{"id":"router-06","history":[],"question":"帮我记一下：Transformer 的核心是注意力机制。","expected_route":"note_store","reason":"明确要求保存内容"}
+{"id":"router-07","history":[],"question":"把这个结论记录下来，后面我还会用到。","expected_route":"note_store","reason":"显式写入记忆"}
+{"id":"router-08","history":[],"question":"保存一下这条笔记：RAG 不等于让模型真正记住知识。","expected_route":"note_store","reason":"显式保存笔记"}
+{"id":"router-09","history":[{"role":"human","content":"什么是 rerank？"},{"role":"ai","content":"rerank 是对初步召回结果再次排序。"}],"question":"把刚才那个结论记一下。","expected_route":"note_store","reason":"依赖上下文的指代型保存"}
+{"id":"router-10","history":[{"role":"human","content":"我感觉 prompt 里要限制模型不要瞎编。"},{"role":"ai","content":"可以要求回答严格基于检索到的 context。"}],"question":"帮我把这个也记住。","expected_route":"note_store","reason":"依赖历史对话的写入请求"}
+{"id":"router-11","history":[],"question":"我之前记过什么关于微调的内容？","expected_route":"note_recall","reason":"查以前的笔记"}
+{"id":"router-12","history":[],"question":"帮我找一下我以前关于 RAG 的笔记。","expected_route":"note_recall","reason":"明确检索历史记录"}
+{"id":"router-13","history":[],"question":"我上次保存的 Transformer 那条笔记是什么来着？","expected_route":"note_recall","reason":"回忆以前存过的内容"}
+{"id":"router-14","history":[{"role":"human","content":"帮我记一下，RAG 更像查资料，不是永久记忆。"},{"role":"ai","content":"已记录。"}],"question":"我刚刚记了什么？","expected_route":"note_recall","reason":"查询刚刚记录的内容"}
+{"id":"router-15","history":[{"role":"human","content":"保存一下这个结论：note recall 要优先参考当前会话。"},{"role":"ai","content":"已保存。"}],"question":"上一条你帮我存了什么？","expected_route":"note_recall","reason":"查最近一次保存内容"}
+{"id":"router-16","history":[],"question":"今天有点烦，投简历一直没回应。","expected_route":"chat","reason":"情绪表达，不是知识问答，也不是笔记存取"}
+{"id":"router-17","history":[],"question":"你觉得我这个项目方向还有必要继续做吗？","expected_route":"chat","reason":"泛讨论和意见交流"}
+{"id":"router-18","history":[],"question":"我们继续聊刚才那个想法吧。","expected_route":"chat","reason":"普通延续对话，没有明确检索或笔记操作"}
+{"id":"router-19","history":[{"role":"human","content":"我想先做最小评估闭环。"},{"role":"ai","content":"可以先从 router accuracy 开始。"}],"question":"那接下来我先做哪个比较合适？","expected_route":"chat","reason":"基于当前对话的建议请求，不是查知识库或笔记"}
+{"id":"router-20","history":[],"question":"谢谢，今天先到这吧。","expected_route":"chat","reason":"普通结束对话"}

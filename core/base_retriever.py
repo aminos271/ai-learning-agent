@@ -1,7 +1,7 @@
 import math
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
@@ -17,8 +17,8 @@ class RetrievedItem:
     """统一的检索结果结构。"""
 
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    retrieval_meta: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    retrieval_meta: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseQdrantStore:
@@ -80,7 +80,7 @@ class BaseQdrantStore:
 
         return self.vector_store
 
-    def _make_qdrant_filter(self, metadata_filter: Optional[Dict[str, Any]] = None):
+    def _make_qdrant_filter(self, metadata_filter: dict[str, Any] | None = None):
         """把 metadata dict 转为 Qdrant Filter 对象。"""
         if not metadata_filter:
             return None
@@ -105,7 +105,7 @@ class BaseQdrantStore:
         prefix = f"{self.metadata_payload_key}."
         return key if key.startswith(prefix) else f"{prefix}{key}"
 
-    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
+    def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """计算两个向量的余弦相似度。"""
         dot = sum(x * y for x, y in zip(a, b))
         norm_a = math.sqrt(sum(x * x for x in a))
@@ -115,11 +115,11 @@ class BaseQdrantStore:
         return dot / (norm_a * norm_b)
 
     def _split_static_and_dynamic_metadata(
-        self, metadata: Optional[Dict[str, Any]]
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        self, metadata: dict[str, Any] | None
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         # 分离static_metadata 与 retrieval_meta
         static_metadata = dict(metadata or {})
-        retrieval_meta: Dict[str, Any] = {}
+        retrieval_meta: dict[str, Any] = {}
 
         raw_score = static_metadata.pop("score", None)
         if raw_score is not None:
@@ -134,7 +134,7 @@ class BaseQdrantStore:
     def _make_retrieved_item(
         self,
         doc: Document,
-        retrieval_meta: Optional[Dict[str, Any]] = None,
+        retrieval_meta: dict[str, Any] | None = None,
     ) -> RetrievedItem:
         # 组装metadata
         static_metadata, dynamic_from_doc = self._split_static_and_dynamic_metadata(
@@ -154,8 +154,8 @@ class BaseQdrantStore:
         self,
         question: str,
         k: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievedItem]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedItem]:
         # 返回检索的文档与相似度，失败时仅返回文档
         vector_store = self._get_vector_store()
         qdrant_filter = self._make_qdrant_filter(metadata_filter)
@@ -168,7 +168,7 @@ class BaseQdrantStore:
             )
             items = []
             for doc, score in docs_with_scores:
-                retrieval_meta: Dict[str, Any] = {}
+                retrieval_meta: dict[str, Any] = {}
                 if score is not None:
                     retrieval_meta["similarity"] = float(score)
                 items.append(self._make_retrieved_item(doc, retrieval_meta))
@@ -189,18 +189,18 @@ class BaseRetriever(BaseQdrantStore, ABC):
     def _rerank_documents(
         self,
         question: str,
-        items: List[RetrievedItem],
-        metadata_filter: Optional[Dict[str, Any]] = None,
+        items: list[RetrievedItem],
+        metadata_filter: dict[str, Any] | None = None,
         top_k: int = 5,
-    ) -> List[RetrievedItem]:
+    ) -> list[RetrievedItem]:
         raise NotImplementedError
 
     def retrieve(
         self,
         question: str,
         k: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievedItem]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> list[RetrievedItem]:
         """基础检索接口，提供统一的 metadata filter 和 rerank 调用。"""
         items = self._similarity_search_items(
             question,

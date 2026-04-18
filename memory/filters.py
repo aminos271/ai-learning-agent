@@ -1,13 +1,14 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 
 def normalize_search_filter(
-    concept: Optional[str] = None,
-    note_type: Optional[str] = None,
-    save_mode: Optional[str] = None,
-    source: Optional[str] = None,
-    metadata_filter: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    concept: str | None = None,
+    note_type: str | None = None,
+    save_mode: str | None = None,
+    source: str | None = None,
+    metadata_filter: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """初始化filter"""
     normalized = dict(metadata_filter or {})
     if concept:
         normalized["concept"] = concept
@@ -21,20 +22,14 @@ def normalize_search_filter(
 
 
 def split_search_filters(
-    metadata_filter: Optional[Dict[str, Any]] = None,
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    metadata_filter: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    拆成两个，其中对于vector_filter去除了concept，
+    防止查找时用了还没仔细规划过的定义而导致的查找失败
+    """
     rerank_filter = dict(metadata_filter or {})
     vector_filter = dict(rerank_filter)
     vector_filter.pop("concept", None)
     return vector_filter, rerank_filter
-
-
-def build_rerank_metadata_filter(
-    metadata_filter: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
-    if not metadata_filter:
-        return {}
-    return dict(metadata_filter)
-
-
 

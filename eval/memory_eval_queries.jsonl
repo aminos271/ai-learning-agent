@@ -1,0 +1,12 @@
+{"id":"memory-01","query":"我记过 Transformer 的核心是什么","expected_note_id":"mem-note-03","reason":"希望 correction_note 比旧 raw note 更靠前"}
+{"id":"memory-02","query":"关于 Transformer，我后来纠正过什么","expected_note_id":"mem-note-03","reason":"偏向 correction_note"}
+{"id":"memory-03","query":"我最后保留下来的 RAG 总结是什么","expected_note_id":"mem-note-05","reason":"summary + recent"}
+{"id":"memory-04","query":"RAG 到底是干什么的，我之前怎么记的","expected_note_id":"mem-note-05","reason":"summary 比旧 raw note 更完整"}
+{"id":"memory-05","query":"我之前怎么理解 MCP","expected_note_id":"mem-note-07","reason":"更完整的 summary note 应靠前"}
+{"id":"memory-06","query":"MCP 不只是工具接口那条更完整的说法是什么","expected_note_id":"mem-note-07","reason":"summary note 应优于 raw note"}
+{"id":"memory-07","query":"我记过 prompt 约束模型回答的重点是什么","expected_note_id":"mem-note-09","reason":"summary note 应优于简短 raw note"}
+{"id":"memory-08","query":"关于 prompt，我后来补充的那条更完整要求是什么","expected_note_id":"mem-note-09","reason":"summary note 应优于 raw note"}
+{"id":"memory-09","query":"我最近记过 router 的哪个设计点","expected_note_id":"mem-note-11","reason":"recent summary 应优于旧流程描述"}
+{"id":"memory-10","query":"路由那块我记过哪些输出字段","expected_note_id":"mem-note-11","reason":"route/reason/confidence 应直接命中 recent summary"}
+{"id":"memory-11","query":"训练里那个防止直接炸掉的操作，我记过什么","expected_note_id":"mem-note-12","reason":"普通 recall 命中训练技巧笔记"}
+{"id":"memory-12","query":"我最近做评估时的主线是什么","expected_note_id":"mem-note-13","reason":"recent summary + plan note"}

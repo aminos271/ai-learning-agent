@@ -1,5 +1,5 @@
 from langchain_core.messages import AIMessage
-from typing import Dict, Any
+from typing import Any
 from graph.prompts import rag_prompt
 from graph.state import AgentState
 
@@ -22,7 +22,7 @@ def rag_node(state: AgentState, llm, retriever) -> AgentState:
     当前版本移除/停用 RAG metadata filter 逻辑，原因是上游无 filter 生产端，
     且 query 无法稳定解析出 source/h1/h2/section_path，继续保留只会制造伪能力和理解负担
     """
-    metadata_filter: Dict[str, Any] = {}
+    metadata_filter: dict[str, Any] = {}
 
     print("🔍 正在检索知识库...")
     docs = retriever.multi_query_search(query, llm, metadata_filter=metadata_filter)

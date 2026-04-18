@@ -186,10 +186,10 @@ Router（意图分类）
 ## 📌 TODO
 
 * [ ] RAG + Memory 融合（当前是分离的）
-* [ ] 前端界面（Web UI）
 * [ ] 多轮记忆优化（长期记忆 vs 会话记忆）
 * [ ] Metadata Filter 生产端（query → filter）
 * [ ] RAG / Memory filter 能力闭环
+* [x] 前端界面（Web UI）
 
 ---
 
@@ -238,7 +238,9 @@ Router（意图分类）
 
 整合成一个可控的 Agent 系统。
 
-
+## 案例演示
+![alt text](./imgs/案例1.png)
+![alt text](./imgs/案例2.png)
 
 ## 📎 补充说明
 

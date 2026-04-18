@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from langchain_core.documents import Document
 
@@ -19,11 +18,11 @@ class MemoryWriter(BaseQdrantStore):
     def add_note(
         self,
         content: str,
-        concept: Optional[str] = None,
+        concept: str | None = None,
         note_type: str = "general",
         save_mode: str = "raw_note",
-        importance: Optional[float] = None,
-        timestamp: Optional[str] = None,
+        importance: float | None = None,
+        timestamp: str | None = None,
         source: str = "user",
     ):
         """添加一条学习笔记，并补全结构化 metadata。"""
@@ -60,7 +59,7 @@ class MemoryWriter(BaseQdrantStore):
             print(f"❌ MemoryWriter.add_note 失败：{e}")
             raise RuntimeError(f"MemoryWriter.add_note 失败：{e}") from e
 
-    def _resolve_concept(self, content: str, concept: Optional[str]) -> str:
+    def _resolve_concept(self, content: str, concept: str | None) -> str:
         candidate = (concept or "").strip()
         if candidate and candidate.lower() != "general":
             return candidate
@@ -88,7 +87,7 @@ class MemoryWriter(BaseQdrantStore):
         content: str,
         note_type: str,
         save_mode: str,
-        importance: Optional[float],
+        importance: float | None,
     ) -> float:
         if importance is not None:
             return max(0.0, min(float(importance), 1.0))
